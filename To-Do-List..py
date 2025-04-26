@@ -1,225 +1,187 @@
+# Yaptığım bu projede bir çok farklı özellik bulunmaktadır. Kullanıcılar görev ekleyebilir, düzenleyebilir, silebilir ve görevleri listeleyebilir. 
+# Görevler tamamlanma durumuna göre filtrelenebilir ve arama yapılabilir. Görevler bir dosyaya kaydedilir ve uygulama başlatıldığında bu dosyadan yüklenir.
+# Proje, kullanıcı dostu bir arayüz sunarak görev yönetimini kolaylaştırmayı amaçlamaktadır.
+# Bu projenin diğerinden bir farkı da görsel arayüz içermesi.
+
+import tkinter as tk
+from tkinter import messagebox, simpledialog
 import datetime
-import os
-import colorama
 
-colorama.init()
+#Öncelikle arayüz tasarımını yaptım
+class ToDoApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("To-Do List")
+        self.gorevler = self.gorevleri_yukle()  # Görevleri dosyadan yükle
 
-RED = colorama.Fore.RED
-BLUE = colorama.Fore.CYAN
-GREEN = colorama.Fore.GREEN
-RESET = colorama.Fore.RESET
+        # Ana çerçeve
+        self.frame = tk.Frame(root)
+        self.frame.pack(pady=10)
 
-def gorevleri_listele(gorevler, filtre=None):
-    if not gorevler:
-        print("\nGörev listesi boş.")
-        return
+        # Görev listesi
+        self.gorev_listbox = tk.Listbox(self.frame, width=50, height=15)
+        self.gorev_listbox.pack(side=tk.LEFT, fill=tk.BOTH)
 
-    filtrelenmis_gorevler = gorevler
-    if filtre:
-        filtrelenmis_gorevler = [
-            (gorev, tarih, durum, oncelik, son_tarih)
-            for gorev, tarih, durum, oncelik, son_tarih in gorevler
-            if (filtre == "tamamlandi" and durum) or (filtre == "tamamlanmadi" and not durum)
-        ]
+        # Kaydırma çubuğu
+        self.scrollbar = tk.Scrollbar(self.frame)
+        self.scrollbar.pack(side=tk.RIGHT, fill=tk.BOTH)
 
-    if not filtrelenmis_gorevler:
-        if filtre == "tamamlandi":
-            print("\nHenüz tamamlanmış bir görev bulunmamaktadır.")
-        elif filtre == "tamamlanmadi":
-            if all(durum for _, _, durum, _, _ in gorevler):  # Tüm görevler tamamlanmış mı kontrolü
-                print("\nTüm görevler başarıyla tamamlanmıştır, tebrikler!")
-            else:
-                print("Henüz tamamlanmamış bir görev bulunmamaktadır.")  # Filtrelenmiş liste boşsa
-        return  # Fonksiyondan çık
+        self.gorev_listbox.config(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.config(command=self.gorev_listbox.yview)
 
-    for i, (gorev, tarih, durum, oncelik, son_tarih) in enumerate(filtrelenmis_gorevler):
-        durum_str = "✓" if durum else "✗"
-        oncelik_renk = RED if oncelik == 3 else BLUE if oncelik == 2 else GREEN
-        oncelik_str = "*" * oncelik
+        # Düğmeler
+        self.add_button = tk.Button(root, text="Yeni Görev Ekle", command=self.yeni_gorev_ekle)
+        self.add_button.pack(pady=5)
 
-        print(f"\n{i+1}. {gorev}")
-        print(f"Eklenme Tarihi: {tarih}")
-        print(f"Durum: {durum_str}")
-        print(f"Öncelik: {oncelik_renk}{oncelik_str}{RESET}")
-        if son_tarih:
-            print(f"Son Tarih: {son_tarih}")
-        print("-" * 20)
+        self.edit_button = tk.Button(root, text="Görev Düzenle", command=self.gorev_duzenle)
+        self.edit_button.pack(pady=5)
 
-def gorev_ara(gorevler):
-    """Görevi adına veya açıklamasına göre arama yapar."""
-    aranan_kelime = input("Aranacak kelimeyi girin: ").lower()
-    bulunan_gorevler = []
-    for i, (gorev, tarih, durum, oncelik, son_tarih) in enumerate(gorevler):
-        if aranan_kelime in gorev.lower():
-            bulunan_gorevler.append((gorev, tarih, durum, oncelik, son_tarih))
+        self.delete_button = tk.Button(root, text="Görev Sil", command=self.gorev_sil)
+        self.delete_button.pack(pady=5)
 
-    if bulunan_gorevler:
-        print("\nBulunan Görevler:")
-        gorevleri_listele(bulunan_gorevler) # Bulunan görevleri listele
-    else:
-        print("Aranan kelimeye uygun görev bulunamadı.")
+        self.show_all_button = tk.Button(root, text="Tüm Görevleri Listele", command=lambda: self.load_gorevler())
+        self.show_all_button.pack(pady=5)
 
-def yeni_gorev_ekle(gorevler):
+        self.show_completed_button = tk.Button(root, text="Tamamlanan Görevleri Göster", command=lambda: self.load_gorevler(filtre="tamamlandi"))
+        self.show_completed_button.pack(pady=5)
+
+        self.show_incomplete_button = tk.Button(root, text="Tamamlanmamış Görevleri Göster", command=lambda: self.load_gorevler(filtre="tamamlanmadi"))
+        self.show_incomplete_button.pack(pady=5)
+
+        self.search_button = tk.Button(root, text="Görev Ara", command=self.gorev_ara)
+        self.search_button.pack(pady=5)
+
+        self.sort_priority_button = tk.Button(root, text="Önceliğe Göre Sırala", command=lambda: self.load_gorevler(sirala="oncelik"))
+        self.sort_priority_button.pack(pady=5)
+
+        self.sort_date_button = tk.Button(root, text="Tarihe Göre Sırala", command=lambda: self.load_gorevler(sirala="tarih"))
+        self.sort_date_button.pack(pady=5)
+
+        self.save_button = tk.Button(root, text="Kaydet", command=self.gorevleri_kaydet)
+        self.save_button.pack(pady=5)
+
+        self.load_gorevler()  
+        
+    #Bu kısımda da görevleri filtreleyebildiğimiz özellikler ekledim
+    def load_gorevler(self, filtre=None, sirala=None):
+        """Görevleri listbox'a yükler, isteğe bağlı olarak filtre uygular ve sıralar."""
+        self.gorev_listbox.delete(0, tk.END)
+        sorted_gorevler = self.gorevler
+
+        if sirala == "oncelik":
+            sorted_gorevler = sorted(self.gorevler, key=lambda x: x[3], reverse=True)  # Önceliğe göre sırala
+        elif sirala == "tarih":
+            sorted_gorevler = sorted(self.gorevler, key=lambda x: x[4] if x[4] else datetime.date.max)  # Tarihe göre sırala
+
+        for gorev, tarih, durum, oncelik, son_tarih in sorted_gorevler:
+            if filtre == "tamamlandi" and not durum:
+                continue
+            if filtre == "tamamlanmadi" and durum:
+                continue
+            durum_str = "✓" if durum else "✗"
+            oncelik_str = "*" * oncelik
+            self.gorev_listbox.insert(tk.END, f"{gorev} - {durum_str} - {oncelik_str} - {son_tarih}")
+            
+    #Yeni görev eklemek için kullandığım fonksiyon
+    def yeni_gorev_ekle(self):
         """Yeni bir görev ekler."""
-        yeni_gorev = input("Yeni görevi girin: ")
-        if not yeni_gorev.strip():
-            print("Boş görev eklenemez.")
-            return
-
-        eklenme_tarihi = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        durum = False
-        oncelik = input(
-            "Öncelik seviyesini girin (1-Düşük, 2-Orta, 3-Yüksek): ")
-        try:
-            oncelik = int(oncelik)
-            if oncelik not in [1, 2, 3]:
-                raise ValueError
-        except ValueError:
-            print("Geçersiz öncelik seviyesi. Varsayılan olarak 'Orta' ayarlanıyor.")
-            oncelik = 2
-
-        while True:  # Tarih kontrol döngüsü
+        yeni_gorev = simpledialog.askstring("Yeni Görev", "Görev adını girin:")
+        if yeni_gorev:
+            eklenme_tarihi = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            durum = False
+            oncelik = simpledialog.askinteger("Öncelik", "Öncelik seviyesini girin (1-Düşük, 2-Orta, 3-Yüksek):", minvalue=1, maxvalue=3)
+            son_tarih_str = simpledialog.askstring("Son Tarih", "Son tarihi girin (YYYY-MM-DD):")
             try:
-                son_tarih_str = input("Son tarihi girin (YYYY-MM-DD): ")
-                son_tarih = datetime.datetime.strptime(
-                    son_tarih_str, "%Y-%m-%d").date()
+                son_tarih = datetime.datetime.strptime(son_tarih_str, "%Y-%m-%d").date()
                 if son_tarih < datetime.date.today():
-                    print(
-                        "Son tarih, bugünden önceki bir tarih olamaz. Lütfen tekrar girin.")
-                else:
-                    break  # Doğru tarih girildiğinde döngüden çık
+                    messagebox.showerror("Hata", "Son tarih bugünden önce olamaz.")
+                    return
             except ValueError:
-                print("Geçersiz tarih formatı. Lütfen YYYY-MM-DD formatında girin.")
+                messagebox.showerror("Hata", "Geçersiz tarih formatı.")
+                return
 
-        gorevler.append((yeni_gorev, eklenme_tarihi,
-                        durum, oncelik, son_tarih))
-        print("Görev eklendi.")
-
-def gorev_duzenle(gorevler):
-        """Belirtilen görevi düzenler."""
-        gorevleri_listele(gorevler)
-        if not gorevler:
+            self.gorevler.append((yeni_gorev, eklenme_tarihi, durum, oncelik, son_tarih))
+            self.load_gorevler()
+            
+    #Görevleri düzenlememizi sağlayan fonksiyon ekledim     
+    def gorev_duzenle(self):
+        """Seçili görevi düzenler."""
+        selected_index = self.gorev_listbox.curselection()
+        if not selected_index:
+            messagebox.showwarning("Uyarı", "Lütfen bir görev seçin.")
             return
 
-        try:
-            gorev_no = int(
-                input("Düzenlemek istediğiniz görevin numarasını girin: ")) - 1
-            if not (0 <= gorev_no < len(gorevler)):
-                raise IndexError  # Geçersiz görev numarası için IndexError oluştur
+        index = selected_index[0]
+        gorev, tarih, durum, oncelik, son_tarih = self.gorevler[index]
 
-            gorev, tarih, durum, oncelik, son_tarih = gorevler[gorev_no]
-
-            while True:
-                print("\nNeyi düzenlemek istersiniz?")
-                print("1. Mesaj")
-                print("2. Son Tarih")
-                print("3. Tamamlanma Durumu")
-                print("4. Öncelik")
-                print("5. İptal")
-
-                secim = input("Seçiminizi yapın: ")
-
-                if secim == "1":
-                    yeni_mesaj = input("Yeni mesajı girin: ")
-                    gorevler[gorev_no] = (
-                        yeni_mesaj, tarih, durum, oncelik, son_tarih)
-                    print("Mesaj güncellendi.")
-                    break
-                elif secim == "2":
-                    while True:
-                        try:
-                            yeni_son_tarih_str = input(
-                                "Yeni son tarihi girin (YYYY-MM-DD): ")
-                            yeni_son_tarih = datetime.datetime.strptime(
-                                yeni_son_tarih_str, "%Y-%m-%d").date()
-                            if yeni_son_tarih < datetime.date.today():
-                                print(
-                                    "Son tarih, bugünden önceki bir tarih olamaz. Lütfen tekrar girin.")
-                            else:
-                                gorevler[gorev_no] = (
-                                    gorev, tarih, durum, oncelik, yeni_son_tarih)
-                                print("Son tarih güncellendi.")
-                                break
-                        except ValueError:
-                            print(
-                                "Geçersiz tarih formatı. Lütfen YYYY-MM-DD formatında girin.")
-                    break
-                elif secim == "3":
-                    yeni_durum = input("Tamamlandı mı? (e/h): ").lower() == "e"
-                    gorevler[gorev_no] = (
-                        gorev, tarih, yeni_durum, oncelik, son_tarih)
-                    print("Tamamlanma durumu güncellendi.")
-                    break
-                elif secim == "4":
-                    while True:
-                        try:
-                            yeni_oncelik = int(
-                                input("Yeni öncelik seviyesini girin (1-Düşük, 2-Orta, 3-Yüksek): "))
-                            if 1 <= yeni_oncelik <= 3:
-                                gorevler[gorev_no] = (
-                                    gorev, tarih, durum, yeni_oncelik, son_tarih)
-                                print("Öncelik güncellendi.")
-                                break
-                            else:
-                                print(
-                                    "Geçersiz öncelik seviyesi. Lütfen 1, 2 veya 3 girin.")
-                        except ValueError:
-                            print("Geçersiz giriş. Lütfen bir sayı girin.")
-                    break
-
-                elif secim == "5":
-                    print("Düzenleme iptal edildi.")
-                    break
-                else:
-                    print("Geçersiz seçim. Lütfen tekrar deneyin.")
-
-        except ValueError:
-            print("Geçersiz giriş. Lütfen bir sayı girin.")
-        except IndexError:
-            print("Geçersiz görev numarası.")
-
-def gorev_sil(gorevler):
-        """Belirtilen görevi siler."""
-        gorevleri_listele(gorevler)
-        if not gorevler:
+        while True:
+            secim = simpledialog.askinteger("Düzenle", "Neyi düzenlemek istersiniz?\n1. Mesaj\n2. Son Tarih\n3. Tamamlanma Durumu\n4. Öncelik\n5. İptal", minvalue=1, maxvalue=5)
+            if secim == 1:
+                yeni_mesaj = simpledialog.askstring("Mesaj Düzenle", "Yeni mesajı girin:", initialvalue=gorev)
+                if yeni_mesaj:
+                    self.gorevler[index] = (yeni_mesaj, tarih, durum, oncelik, son_tarih)
+            elif secim == 2:
+                yeni_son_tarih_str = simpledialog.askstring("Son Tarih Düzenle", "Yeni son tarihi girin (YYYY-MM-DD):", initialvalue=son_tarih.strftime("%Y-%m-%d"))
+                try:
+                    yeni_son_tarih = datetime.datetime.strptime(yeni_son_tarih_str, "%Y-%m-%d").date()
+                    if yeni_son_tarih < datetime.date.today():
+                        messagebox.showerror("Hata", "Son tarih bugünden önce olamaz.")
+                        continue
+                    self.gorevler[index] = (gorev, tarih, durum, oncelik, yeni_son_tarih)
+                except ValueError:
+                    messagebox.showerror("Hata", "Geçersiz tarih formatı.")
+                    continue
+            elif secim == 3:
+                yeni_durum = messagebox.askyesno("Durum Düzenle", "Görev tamamlandı mı?")
+                self.gorevler[index] = (gorev, tarih, yeni_durum, oncelik, son_tarih)
+            elif secim == 4:
+                yeni_oncelik = simpledialog.askinteger("Öncelik Düzenle", "Yeni öncelik seviyesini girin (1-Düşük, 2-Orta, 3-Yüksek):", initialvalue=oncelik, minvalue=1, maxvalue=3)
+                if yeni_oncelik:
+                    self.gorevler[index] = (gorev, tarih, durum, yeni_oncelik, son_tarih)
+            elif secim == 5:
+                break
+            self.load_gorevler()
+            break
+    #İstenmeyen veya biten görevleri silmek için bir silme fonksiyonu ekledim
+    def gorev_sil(self):
+        """Seçili görevi siler."""
+        selected_index = self.gorev_listbox.curselection()
+        if not selected_index:
+            messagebox.showwarning("Uyarı", "Lütfen bir görev seçin.")
             return
 
-        try:
-            gorev_no = int(
-                input("Silmek istediğiniz görevin numarasını girin: ")) - 1
-            if 0 <= gorev_no < len(gorevler):
-                del gorevler[gorev_no]
-                print("Görev silindi.")
-            else:
-                print("Geçersiz görev numarası.")
-        except ValueError:
-            print("Geçersiz giriş. Lütfen bir sayı girin.")
-        except IndexError:
-            print("Geçersiz görev numarası.")
-
-def gorevleri_kaydet(gorevler, dosya_adi="gorevler.txt"):
-        try:
-            with open(dosya_adi, "w", encoding="utf-8") as dosya:
-                for gorev, tarih, durum, oncelik, son_tarih in gorevler:
-                    son_tarih_str = son_tarih.strftime(
-                        "%Y-%m-%d") if son_tarih else ""
-                    dosya.write(f"{gorev}|{tarih}|{durum}|{
-                                oncelik}|{son_tarih_str}\n")
-        except OSError as e:
-            print(f"Dosya yazma hatası: {e}")
-
-def gorevleri_yukle(dosya_adi="gorevler.txt"):
+        index = selected_index[0]
+        del self.gorevler[index]
+        self.load_gorevler()
+    
+    #Kullanıcının görevleri daha rahat görebilmesi için onları içeriğine göre arama özelliği ekledim.
+    def gorev_ara(self):
+        """Görevleri arar."""
+        aranan_kelime = simpledialog.askstring("Görev Ara", "Aranacak kelimeyi girin:")
+        if aranan_kelime:
+            self.gorev_listbox.delete(0, tk.END)
+            bulundu = False
+            for gorev, tarih, durum, oncelik, son_tarih in self.gorevler:
+                if aranan_kelime.lower() in gorev.lower():
+                    bulundu = True
+                    durum_str = "✓" if durum else "✗"
+                    oncelik_str = "*" * oncelik
+                    self.gorev_listbox.insert(tk.END, f"{gorev} - {durum_str} - {oncelik_str} - {son_tarih}")
+            if not bulundu:
+                messagebox.showinfo("Sonuç", "Böyle bir görev yok.")
+                
+    #Görevleri bir .txt dosyasına döüştürüp ayrıca bilgisayarda tutan fonksiyon da ekledim.
+    def gorevleri_yukle(self, dosya_adi="gorevler.txt"):
+        """Görevleri belirtilen dosyadan yükler."""
         gorevler = []
         try:
             with open(dosya_adi, "r", encoding="utf-8") as dosya:
                 for satir in dosya:
                     gorev, tarih_str, durum_str, oncelik_str, son_tarih_str = satir.strip().split("|")
-                    tarih = datetime.datetime.strptime(
-                        tarih_str, "%Y-%m-%d %H:%M:%S")
-                    durum = durum_str.lower() == "true"
-                    oncelik = int(oncelik_str)
-                    son_tarih = datetime.datetime.strptime(
-                        son_tarih_str, "%Y-%m-%d").date() if son_tarih_str else None
+                    tarih = datetime.datetime.strptime(tarih_str, "%Y-%m-%d %H:%M:%S")
+                    durum = durum_str == "tamamlandı"
+                    oncelik = {"düşük": 1, "orta": 2, "yüksek": 3}[oncelik_str]
+                    son_tarih = datetime.datetime.strptime(son_tarih_str, "%Y-%m-%d").date() if son_tarih_str else None
                     gorevler.append((gorev, tarih, durum, oncelik, son_tarih))
         except FileNotFoundError:
             print("Görev dosyası bulunamadı. Yeni bir dosya oluşturulacak.")
@@ -229,79 +191,29 @@ def gorevleri_yukle(dosya_adi="gorevler.txt"):
             print("Görev dosyası bozuk. Yeni bir dosya oluşturulacak.")
             gorevler = []  # Bozuk verileri temizle
         return gorevler
-
-def main():
-        dosya_adi = "gorevler.txt"
-        gorevler = gorevleri_yukle(dosya_adi)
-        degisiklik_yapildi = False
-
-        while True:
-            print("\nTo-Do-List\n")
-            print("Ana Menü:\n")
-            print("1. Görevleri Listele")
-            print("2. Yeni Görev Ekle")
-            print("3. Görev Düzenle")
-            print("4. Görev Sil")
-            print("5. Görev Ara")
-            print("6. Çıkış")
-
-            secim = input("\nSeçiminizi yapın: ")
-           
-            if secim == "1":
-                while True:
-                    print("\nFiltreleme Seçenekleri:")
-                    print("1. Tüm Görevler")
-                    print("2. Tamamlanan Görevler")
-                    print("3. Tamamlanmamış Görevler")
-                    print("4. Geri")
     
-                    filtre_secim = input("Seçiminizi yapın: ")
-    
-                    if filtre_secim == "1":
-                        gorevleri_listele(gorevler)
-                        break
-                    elif filtre_secim == "2":
-                        gorevleri_listele(gorevler, filtre="tamamlandi")
-                        break
-                    elif filtre_secim == "3":
-                        gorevleri_listele(gorevler, filtre="tamamlanmadi")
-                        break
-                    elif filtre_secim == "4":
-                        break
-                    else:
-                        print("Geçersiz seçim. Lütfen tekrar deneyin.")
-
-            elif secim == "2":
-                yeni_gorev_ekle(gorevler)
-                degisiklik_yapildi = True
-                
-            elif secim == "3":
-                gorev_duzenle(gorevler)
-                degisiklik_yapildi = True
-            elif secim == "4":
-                gorev_sil(gorevler)
-                degisiklik_yapildi = True
-            elif secim == "5":  # Çıkış seçeneği
-                gorev_ara(gorevler)
-            elif secim == "6": # Arama için yeni seçenek
-                if degisiklik_yapildi:
-                    while True:
-                        kaydet_secim = input(
-                            "Değişiklikleri kaydetmek istiyor musunuz? (e/h): ").lower()
-                        if kaydet_secim == "e":
-                            gorevleri_kaydet(gorevler, dosya_adi)
-                            print("Görevler kaydedildi.")
-                            break
-                        elif kaydet_secim == "h":
-                            print("Değişiklikler kaydedilmedi.")
-                            break
-                        else:
-                            print("Geçersiz seçim. Lütfen 'e' veya 'h' girin.")
-                print("\nÇıkış yapılıyor...\n")
-                break
-                
-            else:
-                print("\nGeçersiz seçim. Lütfen tekrar deneyin.\n")
+    #Görevleri uygulamadan çıkarken kaydetmek için veya tuşa basarak kaydetmek için bir fonksiyon
+    def gorevleri_kaydet(self, dosya_adi="gorevler.txt"):
+        """Görevleri belirtilen dosyaya kaydeder."""
+        try:
+            with open(dosya_adi, "w", encoding="utf-8") as dosya:
+                for gorev, tarih, durum, oncelik, son_tarih in self.gorevler:
+                    durum_str = "tamamlandı" if durum else "tamamlanmadı"
+                    oncelik_str = {1: "düşük", 2: "orta", 3: "yüksek"}[oncelik]
+                    son_tarih_str = son_tarih.strftime("%Y-%m-%d") if son_tarih else ""
+                    dosya.write(f"{gorev}|{tarih}|{durum_str}|{oncelik_str}|{son_tarih_str}\n")
+            messagebox.showinfo("Başarılı", "Görevler başarıyla kaydedildi.")
+        except OSError as e:
+            print(f"Dosya yazma hatası: {e}")
+            
+    def on_closing(self):
+        """Uygulama kapanırken görevleri kaydeder."""
+        self.gorevleri_kaydet()  # Program kapanırken otomatik kaydet
+        if messagebox.askokcancel("Çıkış", "Çıkmak istediğinizden emin misiniz?"):
+            self.root.destroy()
 
 if __name__ == "__main__":
-        main()
+    root = tk.Tk()
+    app = ToDoApp(root)
+    root.protocol("WM_DELETE_WINDOW", app.on_closing)
+    root.mainloop()
