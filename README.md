@@ -1,67 +1,17 @@
-# 📝 To-Do List Uygulaması
+# Python To-Do List
 
-Bu proje, **Python (Tkinter)** kullanılarak geliştirilmiş bir **görsel arayüzlü To-Do List uygulamasıdır**.  
-Kullanıcıların görevlerini ekleyebileceği, düzenleyebileceği, silebileceği, arayabileceği ve filtreleyebileceği basit ve işlevsel bir görev yönetim sistemidir.  
-Görevler ayrıca bir dosyaya kaydedilir ve uygulama yeniden başlatıldığında dosyadan yüklenir.
+## English
+A simple, terminal-based To-Do List application written in Python. It helps users manage their daily tasks, add new items, and track completed tasks effectively.
 
----
-
-## 🚀 Özellikler
-
-- ✅ Yeni görev ekleme  
-- ✏️ Görev düzenleme  
-- 🗑️ Görev silme  
-- 📋 Tüm görevleri listeleme  
-- 🎯 Tamamlanan / tamamlanmamış görevleri filtreleme  
-- 🔍 Anahtar kelime ile görev arama  
-- 📅 Görevleri **tarihe** veya **önceliğe** göre sıralama  
-- 💾 Görevleri `gorevler.txt` dosyasına kaydetme ve uygulama açıldığında yükleme  
-- 🖥️ Kullanıcı dostu **Tkinter tabanlı görsel arayüz**
+### Features
+- Add, view, and manage tasks.
+- Lightweight Python implementation.
 
 ---
 
-## 📂 Proje Yapısı
+## Türkçe
+Görev yönetimi için Python ile yazılmış basit, terminal tabanlı bir Yapılacaklar Listesi (To-Do List) uygulaması. Kullanıcıların günlük görevlerini eklemesine, yönetmesine ve tamamlananları takip etmesine olanak tanır.
 
-ToDoApp
-
-├── todo.py # Ana uygulama kodu
-
-├── gorevler.txt # Görevlerin kaydedildiği dosya (otomatik oluşturulur)
-
-└── README.md # Proje açıklamaları
-
-
----
-
-## ⚙️ Gereksinimler
-
-- Python 3.8+
-- Tkinter (Python ile birlikte gelir, ayrıca yüklemenize gerek yok)
-
----
-
-## ▶️ Kurulum ve Çalıştırma
-
-1. Projeyi bilgisayarınıza indirin veya kopyalayın:
-   ```bash
-   git clone https://github.com/kullaniciadi/ToDoApp.git
-   cd ToDoApp
-
-Uygulamayı başlatın:
-```bash
-python todo.py
-```
-
-## 📖 Kullanım Detayları
-
-Yeni Görev Ekle → Görev adı, öncelik (1-3 arası) ve son tarih girilir.
-
-Görev Düzenle → Seçilen görev üzerinde mesaj, tarih, tamamlanma durumu veya öncelik değiştirilebilir.
-
-Görev Sil → Seçilen görev listeden kaldırılır.
-
-Görev Ara → Girilen kelimeyi içeren görevler filtrelenerek gösterilir.
-
-Kaydet → Tüm görevler gorevler.txt dosyasına kaydedilir.
-
-Çıkış → Uygulama kapanırken otomatik kaydedilir.
+### Özellikler
+- Görev ekleme, görüntüleme ve yönetme.
+- Hafif ve hızlı Python yapısı.
