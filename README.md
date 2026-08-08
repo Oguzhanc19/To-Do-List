@@ -1,17 +1,24 @@
-# Python To-Do List
+<div align="center">
+  <h1>⚙️ To Do List</h1>
+  <p><i>Project Repository / Proje Deposu</i></p>
+</div>
 
-## English
-A simple, terminal-based To-Do List application written in Python. It helps users manage their daily tasks, add new items, and track completed tasks effectively.
+<br>
 
-### Features
-- Add, view, and manage tasks.
-- Lightweight Python implementation.
+## 🇬🇧 English
+Welcome to the **To Do List** repository. This project contains scripts, assets, and source code crafted to solve specific problems or automate tasks.
+
+### ✨ Features
+- 🚀 High performance & clean code structure.
+- 🧩 Easy to integrate and modify.
+- 💻 Built for efficiency.
 
 ---
 
-## Türkçe
-Görev yönetimi için Python ile yazılmış basit, terminal tabanlı bir Yapılacaklar Listesi (To-Do List) uygulaması. Kullanıcıların günlük görevlerini eklemesine, yönetmesine ve tamamlananları takip etmesine olanak tanır.
+## 🇹🇷 Türkçe
+**To Do List** reposuna hoş geldiniz. Bu proje, belirli problemleri çözmek veya görevleri otomatikleştirmek amacıyla hazırlanmış betikler, kaynak dosyalar ve kodlar içerir.
 
-### Özellikler
-- Görev ekleme, görüntüleme ve yönetme.
-- Hafif ve hızlı Python yapısı.
+### ✨ Özellikler
+- 🚀 Yüksek performanslı ve temiz kod yapısı.
+- 🧩 Kolayca entegre edilebilir ve değiştirilebilir.
+- 💻 Verimlilik odaklı geliştirilmiştir.
